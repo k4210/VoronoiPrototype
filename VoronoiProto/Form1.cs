@@ -13,11 +13,12 @@ namespace VoronoiProto
 
         public List<PointF> included_points_sorted = new List<PointF>();
         public List<PointF> voronoi_points = new List<PointF>();
+        public List<PointF> z_sorted_points = new List<PointF>();
 
         public void Recalculate()
         {
             List<Vector2> local_points = new List<Vector2>(points);
-            List<Vector2> local_voronoi_points = MathHelper.CalculateVoronoiPoints(center, local_points);
+            List<Vector2> local_voronoi_points = CreateGraph.CalculateVoronoiPoints(center, local_points);
 
             voronoi_points.Clear();
             foreach (Vector2 v in local_voronoi_points)
@@ -29,6 +30,16 @@ namespace VoronoiProto
             foreach (Vector2 v in local_points)
             {
                 included_points_sorted.Add(new PointF(v.X, v.Y));
+            }
+            
+            {
+                z_sorted_points.Clear();
+                QuadTree qt = new QuadTree();
+                qt.SetPoint(points, 10);
+                foreach (Vector2 v in qt.sorted_points)
+                {
+                    z_sorted_points.Add(new PointF(v.X, v.Y));
+                }
             }
         }
 
@@ -76,6 +87,12 @@ namespace VoronoiProto
                 e.Graphics.DrawLines(Pens.Green, voronoi_points.ToArray());
                 e.Graphics.DrawLine(Pens.Green, voronoi_points[0], voronoi_points.LastOrDefault());
             }
+
+            if (z_sorted_points.Count > 1)
+            {
+                e.Graphics.DrawLines(Pens.Red, z_sorted_points.ToArray());
+            }
+            
         }
 
         private void panel1_MouseDown(object sender, MouseEventArgs e)
@@ -143,15 +160,16 @@ namespace VoronoiProto
             if (state == EState.Center)
             {
                 center = spot;
+                Recalculate();
+                panel1.Refresh();
             }
 
             if (state == EState.Point && (selected_point >= 0) && selected_point < points.Count)
             {
                 points[selected_point] = spot;
+                Recalculate();
+                panel1.Refresh();
             }
-
-            Recalculate();
-            panel1.Refresh();
         }
     }
 }
